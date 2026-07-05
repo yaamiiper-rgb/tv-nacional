@@ -310,7 +310,8 @@
     }
 
     .back,
-    .open-link {
+    .open-link,
+    .cast-button {
       min-height: 38px;
       border: 1px solid var(--line);
       border-radius: 12px;
@@ -325,6 +326,25 @@
       font-weight: 700;
       box-shadow: 0 0 18px rgba(99, 232, 255, 0.14);
       backdrop-filter: blur(12px);
+    }
+
+    .player-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .cast-button {
+      font-weight: 700;
+    }
+
+    .cast-status {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+      min-height: 16px;
     }
 
     .channel-title {
@@ -531,8 +551,12 @@
         <div class="channel-title">
           <h2 id="channelName">Sin canal seleccionado</h2>
           <p id="channelInfo">Elige un canal para verlo.</p>
+          <p id="castStatus" class="cast-status"></p>
         </div>
-        <a id="directLink" class="open-link" href="#" target="_blank" rel="noreferrer">Abrir enlace</a>
+        <div class="player-actions">
+          <button id="castButton" class="cast-button" type="button">Transmitir</button>
+          <a id="directLink" class="open-link" href="#" target="_blank" rel="noreferrer">Abrir enlace</a>
+        </div>
       </div>
 
       <section id="playerWrap" class="screen">
@@ -568,6 +592,7 @@
       groups: [],
       currentGroup: "Todos",
       currentChannel: null,
+      currentVideo: null,
       hls: null
     };
 
@@ -582,6 +607,8 @@
       playerWrap: document.querySelector("#playerWrap"),
       channelName: document.querySelector("#channelName"),
       channelInfo: document.querySelector("#channelInfo"),
+      castStatus: document.querySelector("#castStatus"),
+      castButton: document.querySelector("#castButton"),
       directLink: document.querySelector("#directLink"),
       backButton: document.querySelector("#backButton"),
       themeChoice: document.querySelector("#themeChoice"),
@@ -814,6 +841,7 @@
         state.hls.destroy();
         state.hls = null;
       }
+      state.currentVideo = null;
       els.playerWrap.innerHTML = '<div class="empty">Selecciona un cuadro de canal para abrir esta pantalla.</div>';
     }
 
@@ -825,6 +853,7 @@
       video.autoplay = true;
       video.playsInline = true;
       els.playerWrap.appendChild(video);
+      state.currentVideo = video;
 
       if (format === "m3u8" && window.Hls && Hls.isSupported()) {
         state.hls = new Hls();
@@ -845,6 +874,32 @@
       els.playerWrap.appendChild(iframe);
     }
 
+    async function castCurrentChannel() {
+      els.castStatus.textContent = "";
+
+      if (!state.currentChannel) {
+        els.castStatus.textContent = "Primero selecciona un canal.";
+        return;
+      }
+
+      if (!state.currentVideo) {
+        els.castStatus.textContent = "Este canal usa una pagina externa. Prueba Abrir enlace y luego Transmitir desde Chrome.";
+        return;
+      }
+
+      if (state.currentVideo.remote && typeof state.currentVideo.remote.prompt === "function") {
+        try {
+          await state.currentVideo.remote.prompt();
+          els.castStatus.textContent = "Elige tu TV o dispositivo en la ventana del navegador.";
+        } catch (error) {
+          els.castStatus.textContent = "No se pudo abrir Transmitir. Revisa que tu TV y PC esten en la misma red.";
+        }
+        return;
+      }
+
+      els.castStatus.textContent = "Tu navegador no permite transmitir desde este reproductor. En Chrome usa el menu de tres puntos > Transmitir.";
+    }
+
     function selectChannel(channel) {
       state.currentChannel = channel;
       const option = getPlayableOption(channel);
@@ -852,6 +907,7 @@
 
       els.channelName.textContent = channel.name;
       els.channelInfo.textContent = `${channel.groupName} - ${option ? option.format.toUpperCase() : "web"}`;
+      els.castStatus.textContent = "";
       els.directLink.href = directUrl;
       showPlayer();
 
@@ -893,6 +949,7 @@
     });
 
     els.backButton.addEventListener("click", showHome);
+    els.castButton.addEventListener("click", castCurrentChannel);
     els.changeTheme.addEventListener("click", toggleThemeChoice);
     document.querySelectorAll("[data-theme]").forEach((button) => {
       button.addEventListener("click", () => applyTheme(button.dataset.theme));
