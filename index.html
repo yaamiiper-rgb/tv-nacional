@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TV Nacional</title>
+  <script async src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #101114;
+      --panel: #191b20;
+      --panel-2: #22252c;
+      --text: #f4f5f7;
+      --muted: #aeb4c0;
+      --line: #323640;
+      --accent: #21b783;
+      --danger: #f36b6b;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 340px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    aside {
+      border-right: 1px solid var(--line);
+      background: var(--panel);
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    header {
+      padding: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      font-size: 22px;
+      letter-spacing: 0;
+    }
+
+    .source {
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .source a {
+      color: var(--accent);
+    }
+
+    .search {
+      width: 100%;
+      height: 40px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--panel-2);
+      color: var(--text);
+      padding: 0 12px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .search:focus {
+      border-color: var(--accent);
+    }
+
+    .groups {
+      display: flex;
+      gap: 8px;
+      padding: 12px 18px;
+      overflow-x: auto;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .group-button {
+      flex: 0 0 auto;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .group-button.active {
+      border-color: var(--accent);
+      background: rgba(33, 183, 131, 0.16);
+    }
+
+    .channels {
+      overflow: auto;
+      padding: 10px;
+    }
+
+    .channel {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 46px minmax(0, 1fr);
+      gap: 10px;
+      align-items: center;
+      min-height: 62px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--text);
+      padding: 8px;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .channel:hover,
+    .channel.active {
+      background: var(--panel-2);
+      border-color: var(--line);
+    }
+
+    .channel.active {
+      border-color: var(--accent);
+    }
+
+    .logo {
+      width: 46px;
+      height: 46px;
+      border-radius: 7px;
+      background: #2d313a;
+      object-fit: contain;
+    }
+
+    .channel strong {
+      display: block;
+      overflow-wrap: anywhere;
+      font-size: 14px;
+      line-height: 1.25;
+    }
+
+    .channel span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      overflow-wrap: anywhere;
+    }
+
+    main {
+      display: grid;
+      grid-template-rows: minmax(260px, 1fr) auto;
+      min-width: 0;
+      min-height: 0;
+    }
+
+    .player-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #050608;
+      min-height: 0;
+      position: relative;
+    }
+
+    video,
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: #050608;
+    }
+
+    .empty {
+      max-width: 520px;
+      padding: 24px;
+      text-align: center;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .details {
+      border-top: 1px solid var(--line);
+      background: var(--panel);
+      padding: 18px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .details h2 {
+      margin: 0 0 6px;
+      font-size: 20px;
+      overflow-wrap: anywhere;
+      letter-spacing: 0;
+    }
+
+    .details p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .action {
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      color: var(--text);
+      border-radius: 6px;
+      min-height: 38px;
+      padding: 0 12px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      font-size: 14px;
+    }
+
+    .action.primary {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #06130e;
+      font-weight: 700;
+    }
+
+    .status {
+      padding: 14px 18px;
+      color: var(--muted);
+      font-size: 13px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .status.error {
+      color: var(--danger);
+    }
+
+    @media (max-width: 860px) {
+      .app {
+        grid-template-columns: 1fr;
+        grid-template-rows: 44vh 56vh;
+      }
+
+      aside {
+        grid-row: 2;
+        border-right: 0;
+        border-top: 1px solid var(--line);
+      }
+
+      main {
+        grid-row: 1;
+      }
+
+      .details {
+        grid-template-columns: 1fr;
+      }
+
+      .actions {
+        justify-content: flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside>
+      <header>
+        <h1>TV Nacional</h1>
+        <input id="search" class="search" type="search" placeholder="Buscar canal">
+        <p class="source">
+          Datos de canales desde
+          <a href="https://github.com/LaQuay/TDTChannels" target="_blank" rel="noreferrer">TDTChannels</a>.
+        </p>
+      </header>
+      <div id="status" class="status">Cargando canales...</div>
+      <nav id="groups" class="groups" aria-label="Regiones"></nav>
+      <section id="channels" class="channels" aria-label="Canales"></section>
+    </aside>
+
+    <main>
+      <section id="playerWrap" class="player-wrap">
+        <div class="empty">Elige un canal de la lista para empezar a verlo.</div>
+      </section>
+      <section class="details">
+        <div>
+          <h2 id="channelName">Sin canal seleccionado</h2>
+          <p id="channelInfo">Se mostrarán aquí el origen, formato y enlaces disponibles.</p>
+        </div>
+        <div class="actions">
+          <a id="webLink" class="action" href="https://www.tdtchannels.com/" target="_blank" rel="noreferrer">Web</a>
+          <a id="directLink" class="action primary" href="#" target="_blank" rel="noreferrer">Abrir enlace</a>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const DATA_URL = location.protocol.startsWith("http")
+      ? "/api/tv"
+      : "https://www.tdtchannels.com/lists/tv.json";
+    const state = {
+      groups: [],
+      currentGroup: "Todos",
+      currentChannel: null,
+      hls: null
+    };
+
+    const els = {
+      status: document.querySelector("#status"),
+      groups: document.querySelector("#groups"),
+      channels: document.querySelector("#channels"),
+      search: document.querySelector("#search"),
+      playerWrap: document.querySelector("#playerWrap"),
+      channelName: document.querySelector("#channelName"),
+      channelInfo: document.querySelector("#channelInfo"),
+      webLink: document.querySelector("#webLink"),
+      directLink: document.querySelector("#directLink")
+    };
+
+    function getPlayableOption(channel) {
+      return (channel.options || []).find((option) => {
+        return ["m3u8", "mp4", "youtube", "stream"].includes(option.format) && option.url;
+      });
+    }
+
+    function getFilteredChannels() {
+      const term = els.search.value.trim().toLowerCase();
+      return state.groups
+        .filter((group) => state.currentGroup === "Todos" || group.name === state.currentGroup)
+        .flatMap((group) => {
+          return (group.channels || []).map((channel) => ({ ...channel, groupName: group.name }));
+        })
+        .filter((channel) => {
+          return !term || `${channel.name} ${channel.groupName}`.toLowerCase().includes(term);
+        });
+    }
+
+    function renderGroups() {
+      const names = ["Todos", ...state.groups.map((group) => group.name)];
+      els.groups.innerHTML = "";
+      names.forEach((name) => {
+        const button = document.createElement("button");
+        button.className = `group-button${name === state.currentGroup ? " active" : ""}`;
+        button.textContent = name;
+        button.addEventListener("click", () => {
+          state.currentGroup = name;
+          renderGroups();
+          renderChannels();
+        });
+        els.groups.appendChild(button);
+      });
+    }
+
+    function renderChannels() {
+      const channels = getFilteredChannels();
+      els.channels.innerHTML = "";
+
+      if (!channels.length) {
+        els.channels.innerHTML = '<div class="status">No hay canales con ese filtro.</div>';
+        return;
+      }
+
+      channels.forEach((channel) => {
+        const option = getPlayableOption(channel);
+        const button = document.createElement("button");
+        button.className = `channel${state.currentChannel?.name === channel.name ? " active" : ""}`;
+        button.disabled = !option && !channel.web;
+        button.innerHTML = `
+          <img class="logo" alt="" src="${channel.logo || ""}">
+          <span>
+            <strong>${channel.name}</strong>
+            <span>${channel.groupName}${option ? ` · ${option.format.toUpperCase()}` : " · web"}</span>
+          </span>
+        `;
+        button.addEventListener("click", () => selectChannel(channel));
+        els.channels.appendChild(button);
+      });
+    }
+
+    function youtubeEmbedUrl(url) {
+      try {
+        const parsed = new URL(url);
+        const channelMatch = parsed.pathname.match(/\/channel\/([^/]+)\/live/);
+        if (channelMatch) {
+          return `https://www.youtube.com/embed/live_stream?channel=${channelMatch[1]}&autoplay=1`;
+        }
+        const videoId = parsed.searchParams.get("v");
+        return videoId ? `https://www.youtube.com/embed/${videoId}?autoplay=1` : url;
+      } catch {
+        return url;
+      }
+    }
+
+    function clearPlayer() {
+      if (state.hls) {
+        state.hls.destroy();
+        state.hls = null;
+      }
+      els.playerWrap.innerHTML = "";
+    }
+
+    function playVideo(url, format) {
+      clearPlayer();
+      const video = document.createElement("video");
+      video.controls = true;
+      video.autoplay = true;
+      video.playsInline = true;
+      els.playerWrap.appendChild(video);
+
+      if (format === "m3u8" && window.Hls && Hls.isSupported()) {
+        state.hls = new Hls();
+        state.hls.loadSource(url);
+        state.hls.attachMedia(video);
+      } else {
+        video.src = url;
+      }
+    }
+
+    function playFrame(url) {
+      clearPlayer();
+      const iframe = document.createElement("iframe");
+      iframe.allow = "autoplay; encrypted-media; picture-in-picture";
+      iframe.allowFullscreen = true;
+      iframe.src = url;
+      els.playerWrap.appendChild(iframe);
+    }
+
+    function selectChannel(channel) {
+      state.currentChannel = channel;
+      const option = getPlayableOption(channel);
+      const directUrl = option?.url || channel.web || "#";
+
+      els.channelName.textContent = channel.name;
+      els.channelInfo.textContent = `${channel.groupName} · ${option ? option.format.toUpperCase() : "solo web"}`;
+      els.webLink.href = channel.web || directUrl;
+      els.directLink.href = directUrl;
+
+      if (!option && channel.web) {
+        playFrame(channel.web);
+      } else if (option?.format === "youtube") {
+        playFrame(youtubeEmbedUrl(option.url));
+      } else if (option?.format === "stream") {
+        playFrame(option.url);
+      } else if (option) {
+        playVideo(option.url, option.format);
+      }
+
+      renderChannels();
+    }
+
+    function normalizeGroups(data) {
+      if (Array.isArray(data)) return data;
+      if (Array.isArray(data?.ambits)) return data.ambits;
+      if (Array.isArray(data?.countries)) {
+        return data.countries.flatMap((country) => country.ambits || []);
+      }
+      return [];
+    }
+
+    async function loadChannels() {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 12000);
+        const response = await fetch(DATA_URL, { cache: "no-store", signal: controller.signal });
+        clearTimeout(timeout);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        state.groups = normalizeGroups(data);
+
+        if (!state.groups.length) throw new Error("Lista sin grupos");
+        els.status.textContent = `${getFilteredChannels().length} canales cargados`;
+        els.status.classList.remove("error");
+        renderGroups();
+        renderChannels();
+      } catch (error) {
+        els.status.textContent = "No se pudo cargar la lista. Revisa tu conexión o prueba abrirlo desde un servidor local.";
+        els.status.classList.add("error");
+      }
+    }
+
+    els.search.addEventListener("input", () => {
+      els.status.textContent = `${getFilteredChannels().length} canales encontrados`;
+      renderChannels();
+    });
+
+    loadChannels();
+  </script>
+</body>
+</html>
