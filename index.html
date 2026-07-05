@@ -419,8 +419,19 @@
     const recommendedRequests = [
       {
         title: "Televisa / Las Estrellas",
+        customChannel: {
+          name: "EstrellaTV",
+          groupName: "Recomendados",
+          web: "https://www.estrellatv.com/",
+          options: [
+            {
+              format: "m3u8",
+              url: "https://amg00567-estrellamedia-estrellatv-estrellamedia-5tdh5.amagi.tv/playlist/amg00567-estrellamedia-estrellatv-estrellamedia/playlist.m3u8"
+            }
+          ]
+        },
         terms: ["las estrellas", "televisa"],
-        note: "sin m3u8 publico"
+        note: "m3u8 agregado"
       },
       {
         title: "CNN en Espanol",
@@ -439,8 +450,19 @@
       },
       {
         title: "DSports",
+        customChannel: {
+          name: "DSports",
+          groupName: "Recomendados",
+          web: "https://www.directvgo.com/",
+          options: [
+            {
+              format: "m3u8",
+              url: "http://38.187.7.252:8000/play/a03d/index.m3u8"
+            }
+          ]
+        },
         terms: ["dsports", "d sports", "directv sports"],
-        note: "sin m3u8 publico"
+        note: "m3u8 personal"
       }
     ];
 
@@ -478,6 +500,8 @@
     }
 
     function findRecommendedChannel(request) {
+      if (request.customChannel) return request.customChannel;
+
       const channels = allChannels();
       return channels.find((channel) => {
         const haystack = `${channel.name} ${channel.groupName} ${channel.web || ""}`.toLowerCase();
