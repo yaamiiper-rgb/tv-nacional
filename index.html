@@ -7,16 +7,41 @@
   <script async src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
   <style>
     :root {
+      color-scheme: dark;
+      --bg: #05070d;
+      --ink: #f7fbff;
+      --muted: #a7b4c6;
+      --line: rgba(123, 173, 255, 0.72);
+      --soft-line: rgba(255, 255, 255, 0.16);
+      --card: rgba(9, 14, 28, 0.78);
+      --panel: rgba(5, 8, 18, 0.82);
+      --player: #020306;
+      --accent: #63e8ff;
+      --accent-2: #9b5cff;
+      --accent-3: #30ffad;
+      --danger: #ff6b8a;
+      --page-bg: url("bg-dark.png");
+      --glass: rgba(255, 255, 255, 0.08);
+      --shadow: 0 18px 50px rgba(0, 0, 0, 0.42);
+    }
+
+    body.light-mode {
       color-scheme: light;
-      --bg: #f6f7f9;
-      --ink: #111111;
-      --muted: #626975;
-      --line: #111111;
-      --soft-line: #d8dde5;
-      --card: #ffffff;
-      --player: #050608;
-      --accent: #1677ff;
-      --danger: #bf263c;
+      --bg: #eef2f8;
+      --ink: #101521;
+      --muted: #586273;
+      --line: rgba(68, 116, 255, 0.45);
+      --soft-line: rgba(19, 35, 58, 0.14);
+      --card: rgba(255, 255, 255, 0.78);
+      --panel: rgba(255, 255, 255, 0.74);
+      --player: #f7f9fc;
+      --accent: #1d7dff;
+      --accent-2: #b44cff;
+      --accent-3: #00c789;
+      --danger: #c82142;
+      --page-bg: url("bg-light.png");
+      --glass: rgba(255, 255, 255, 0.58);
+      --shadow: 0 18px 46px rgba(93, 116, 160, 0.2);
     }
 
     * {
@@ -26,9 +51,28 @@
     body {
       margin: 0;
       min-height: 100vh;
-      background: var(--bg);
+      background-color: var(--bg);
+      background-image:
+        linear-gradient(135deg, rgba(99, 232, 255, 0.12), rgba(155, 92, 255, 0.08), rgba(48, 255, 173, 0.08)),
+        var(--page-bg);
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
       color: var(--ink);
       font-family: Arial, Helvetica, sans-serif;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 16% 18%, rgba(99, 232, 255, 0.22), transparent 24%),
+        radial-gradient(circle at 82% 12%, rgba(155, 92, 255, 0.2), transparent 26%),
+        radial-gradient(circle at 55% 92%, rgba(48, 255, 173, 0.16), transparent 24%);
+      mix-blend-mode: screen;
+      opacity: 0.72;
     }
 
     button,
@@ -39,12 +83,17 @@
     .app {
       min-height: 100vh;
       padding: 8px 14px 18px;
+      position: relative;
+      z-index: 1;
     }
 
     .topbar {
-      height: 46px;
-      border: 4px solid var(--line);
-      background: #ffffff;
+      min-height: 54px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--panel);
+      backdrop-filter: blur(16px);
+      box-shadow: var(--shadow), 0 0 22px rgba(99, 232, 255, 0.24);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -59,6 +108,7 @@
       line-height: 1;
       letter-spacing: 0;
       text-transform: lowercase;
+      text-shadow: 0 0 14px var(--accent), 0 0 28px var(--accent-2);
     }
 
     .home {
@@ -75,13 +125,15 @@
 
     .search {
       width: 100%;
-      height: 38px;
-      border: 2px solid var(--line);
-      border-radius: 0;
-      background: #ffffff;
+      height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel);
       color: var(--ink);
       padding: 0 10px;
       outline: none;
+      box-shadow: 0 0 18px rgba(99, 232, 255, 0.14);
+      backdrop-filter: blur(12px);
     }
 
     .search:focus {
@@ -97,17 +149,22 @@
 
     .group-button {
       flex: 0 0 auto;
-      min-height: 38px;
-      border: 2px solid var(--line);
-      background: #ffffff;
+      min-height: 40px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel);
       color: var(--ink);
       padding: 0 12px;
       cursor: pointer;
+      box-shadow: 0 0 14px rgba(155, 92, 255, 0.14);
+      backdrop-filter: blur(12px);
     }
 
     .group-button.active {
-      background: var(--ink);
-      color: #ffffff;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2), var(--accent-3));
+      color: #05070d;
+      border-color: transparent;
+      font-weight: 700;
     }
 
     .status {
@@ -145,7 +202,8 @@
 
     .channel-card {
       min-height: 104px;
-      border: 4px solid var(--line);
+      border: 1px solid var(--line);
+      border-radius: 16px;
       background: var(--card);
       color: var(--ink);
       padding: 8px;
@@ -154,12 +212,18 @@
       gap: 7px;
       cursor: pointer;
       text-align: center;
+      box-shadow: var(--shadow), 0 0 20px rgba(99, 232, 255, 0.12);
+      backdrop-filter: blur(14px);
+      transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
     }
 
     .channel-card:hover,
     .channel-card:focus-visible {
-      outline: 3px solid var(--accent);
+      transform: translateY(-3px);
+      outline: 2px solid var(--accent);
       outline-offset: 2px;
+      border-color: var(--accent);
+      box-shadow: var(--shadow), 0 0 26px rgba(99, 232, 255, 0.42), 0 0 40px rgba(155, 92, 255, 0.24);
     }
 
     .channel-card:disabled {
@@ -168,9 +232,9 @@
     }
 
     .channel-card.missing {
-      background: #f1f3f6;
-      border-color: #5f6672;
-      color: #5f6672;
+      background: color-mix(in srgb, var(--card) 64%, transparent);
+      border-color: var(--soft-line);
+      color: var(--muted);
     }
 
     .badge {
@@ -186,12 +250,14 @@
       width: 68px;
       height: 46px;
       margin: 0 auto;
-      border: 4px solid var(--line);
-      background: #ffffff;
+      border: 2px solid var(--line);
+      border-radius: 8px;
+      background: var(--glass);
       position: relative;
       display: flex;
       align-items: center;
       justify-content: center;
+      box-shadow: inset 0 0 18px rgba(99, 232, 255, 0.16), 0 0 16px rgba(155, 92, 255, 0.16);
     }
 
     .tv-icon::after {
@@ -200,8 +266,9 @@
       left: 50%;
       bottom: -10px;
       width: 18px;
-      height: 4px;
-      background: var(--line);
+      height: 3px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2), var(--accent-3));
       transform: translateX(-50%);
     }
 
@@ -245,8 +312,9 @@
     .back,
     .open-link {
       min-height: 38px;
-      border: 3px solid var(--line);
-      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel);
       color: var(--ink);
       padding: 0 12px;
       cursor: pointer;
@@ -255,6 +323,8 @@
       align-items: center;
       justify-content: center;
       font-weight: 700;
+      box-shadow: 0 0 18px rgba(99, 232, 255, 0.14);
+      backdrop-filter: blur(12px);
     }
 
     .channel-title {
@@ -277,12 +347,14 @@
 
     .screen {
       min-height: 300px;
-      border: 4px solid var(--line);
+      border: 1px solid var(--line);
+      border-radius: 18px;
       background: var(--player);
       display: flex;
       align-items: center;
       justify-content: center;
       overflow: hidden;
+      box-shadow: var(--shadow), 0 0 32px rgba(99, 232, 255, 0.22), 0 0 58px rgba(155, 92, 255, 0.14);
     }
 
     video,
@@ -311,6 +383,87 @@
     .source a {
       color: var(--accent);
       font-weight: 700;
+    }
+
+    .theme-choice {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: none;
+      place-items: center;
+      padding: 20px;
+      background: rgba(0, 0, 0, 0.54);
+      backdrop-filter: blur(18px);
+    }
+
+    .theme-choice.active {
+      display: grid;
+    }
+
+    .theme-panel {
+      width: min(520px, 100%);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: var(--panel);
+      color: var(--ink);
+      padding: 22px;
+      box-shadow: var(--shadow), 0 0 44px rgba(99, 232, 255, 0.28);
+      backdrop-filter: blur(18px);
+      text-align: center;
+    }
+
+    .theme-panel h2 {
+      margin: 0 0 8px;
+      font-size: 26px;
+      letter-spacing: 0;
+    }
+
+    .theme-panel p {
+      margin: 0 0 18px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .theme-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .theme-button {
+      min-height: 84px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      color: var(--ink);
+      cursor: pointer;
+      font-weight: 700;
+      box-shadow: 0 0 22px rgba(99, 232, 255, 0.16);
+    }
+
+    .theme-button.dark {
+      background: linear-gradient(135deg, #05070d, #15213f 54%, #101015);
+      color: #f7fbff;
+    }
+
+    .theme-button.light {
+      background: linear-gradient(135deg, #ffffff, #edf5ff 55%, #f7efff);
+      color: #101521;
+    }
+
+    .change-theme {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 8;
+      width: 42px;
+      height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2), var(--accent-3));
+      color: #05070d;
+      cursor: pointer;
+      font-weight: 900;
+      box-shadow: 0 0 24px rgba(99, 232, 255, 0.36);
     }
 
     @media (max-width: 760px) {
@@ -346,6 +499,10 @@
         width: 58px;
         height: 40px;
         border-width: 3px;
+      }
+
+      .theme-actions {
+        grid-template-columns: 1fr;
       }
     }
   </style>
@@ -389,6 +546,19 @@
     </section>
   </div>
 
+  <section id="themeChoice" class="theme-choice" aria-label="Elegir modo">
+    <div class="theme-panel">
+      <h2>Elige el modo</h2>
+      <p>Selecciona como quieres ver la app. Puedes cambiarlo despues con el boton RGB.</p>
+      <div class="theme-actions">
+        <button class="theme-button dark" type="button" data-theme="dark">Modo oscuro</button>
+        <button class="theme-button light" type="button" data-theme="light">Modo blanco</button>
+      </div>
+    </div>
+  </section>
+
+  <button id="changeTheme" class="change-theme" type="button" title="Cambiar modo">RGB</button>
+
   <script>
     const DATA_URL = location.protocol.startsWith("http")
       ? "/api/tv"
@@ -413,7 +583,9 @@
       channelName: document.querySelector("#channelName"),
       channelInfo: document.querySelector("#channelInfo"),
       directLink: document.querySelector("#directLink"),
-      backButton: document.querySelector("#backButton")
+      backButton: document.querySelector("#backButton"),
+      themeChoice: document.querySelector("#themeChoice"),
+      changeTheme: document.querySelector("#changeTheme")
     };
 
     const recommendedRequests = [
@@ -465,6 +637,25 @@
         note: "m3u8 personal"
       }
     ];
+
+    function applyTheme(theme) {
+      const selected = theme === "light" ? "light" : "dark";
+      document.body.classList.toggle("light-mode", selected === "light");
+      document.body.classList.toggle("dark-mode", selected === "dark");
+      localStorage.setItem("tv-theme", selected);
+      els.themeChoice.classList.remove("active");
+    }
+
+    function askThemeIfNeeded() {
+      const savedTheme = localStorage.getItem("tv-theme") || "dark";
+      document.body.classList.toggle("light-mode", savedTheme === "light");
+      document.body.classList.toggle("dark-mode", savedTheme !== "light");
+      els.themeChoice.classList.add("active");
+    }
+
+    function toggleThemeChoice() {
+      els.themeChoice.classList.add("active");
+    }
 
     function getPlayableOption(channel) {
       return (channel.options || []).find((option) => {
@@ -702,7 +893,12 @@
     });
 
     els.backButton.addEventListener("click", showHome);
+    els.changeTheme.addEventListener("click", toggleThemeChoice);
+    document.querySelectorAll("[data-theme]").forEach((button) => {
+      button.addEventListener("click", () => applyTheme(button.dataset.theme));
+    });
 
+    askThemeIfNeeded();
     loadChannels();
   </script>
 </body>
