@@ -121,6 +121,21 @@
       color: var(--danger);
     }
 
+    .section-title {
+      margin: 14px 0 10px;
+      font-size: 20px;
+      line-height: 1.1;
+      letter-spacing: 0;
+    }
+
+    .recommended-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(138px, 1fr));
+      gap: 14px;
+      align-items: start;
+      margin-bottom: 18px;
+    }
+
     .channel-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(116px, 1fr));
@@ -150,6 +165,21 @@
     .channel-card:disabled {
       cursor: not-allowed;
       opacity: 0.5;
+    }
+
+    .channel-card.missing {
+      background: #f1f3f6;
+      border-color: #5f6672;
+      color: #5f6672;
+    }
+
+    .badge {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.2;
+      font-weight: 400;
     }
 
     .tv-icon {
@@ -302,6 +332,11 @@
         gap: 10px;
       }
 
+      .recommended-grid {
+        grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
+        gap: 10px;
+      }
+
       .channel-card {
         min-height: 96px;
         border-width: 3px;
@@ -327,6 +362,9 @@
         <nav id="groups" class="groups" aria-label="Categorias"></nav>
       </div>
       <p id="status" class="status">Cargando canales...</p>
+      <h2 class="section-title">Recomendados</h2>
+      <section id="recommended" class="recommended-grid" aria-label="Canales recomendados"></section>
+      <h2 class="section-title">Todos</h2>
       <section id="channels" class="channel-grid" aria-label="Canales"></section>
     </section>
 
@@ -368,6 +406,7 @@
       playerView: document.querySelector("#playerView"),
       status: document.querySelector("#status"),
       groups: document.querySelector("#groups"),
+      recommended: document.querySelector("#recommended"),
       channels: document.querySelector("#channels"),
       search: document.querySelector("#search"),
       playerWrap: document.querySelector("#playerWrap"),
@@ -376,6 +415,34 @@
       directLink: document.querySelector("#directLink"),
       backButton: document.querySelector("#backButton")
     };
+
+    const recommendedRequests = [
+      {
+        title: "Televisa / Las Estrellas",
+        terms: ["las estrellas", "televisa"],
+        note: "sin m3u8 publico"
+      },
+      {
+        title: "CNN en Espanol",
+        terms: ["cnn internacional", "cnn en espanol", "cnn español"],
+        note: "TDTChannels"
+      },
+      {
+        title: "FRANCE24",
+        terms: ["france 24", "france24"],
+        note: "TDTChannels"
+      },
+      {
+        title: "National Geographic",
+        terms: ["national geographic", "nat geo"],
+        note: "sin m3u8 publico"
+      },
+      {
+        title: "DSports",
+        terms: ["dsports", "d sports", "directv sports"],
+        note: "sin m3u8 publico"
+      }
+    ];
 
     function getPlayableOption(channel) {
       return (channel.options || []).find((option) => {
@@ -402,6 +469,20 @@
         .filter((channel) => {
           return !term || `${channel.name} ${channel.groupName}`.toLowerCase().includes(term);
         });
+    }
+
+    function allChannels() {
+      return state.groups.flatMap((group) => {
+        return (group.channels || []).map((channel) => ({ ...channel, groupName: group.name }));
+      });
+    }
+
+    function findRecommendedChannel(request) {
+      const channels = allChannels();
+      return channels.find((channel) => {
+        const haystack = `${channel.name} ${channel.groupName} ${channel.web || ""}`.toLowerCase();
+        return request.terms.some((term) => haystack.includes(term));
+      });
     }
 
     function renderGroups() {
@@ -434,19 +515,53 @@
 
       channels.forEach((channel) => {
         const option = getPlayableOption(channel);
-        const button = document.createElement("button");
-        button.className = "channel-card";
-        button.type = "button";
-        button.disabled = !option && !channel.web;
-        button.innerHTML = `
-          <span class="tv-icon">
-            ${channel.logo ? `<img class="logo" alt="" src="${channel.logo}">` : ""}
-          </span>
-          <span class="card-name">${channel.name}</span>
-        `;
-        button.addEventListener("click", () => selectChannel(channel));
-        els.channels.appendChild(button);
+        els.channels.appendChild(createChannelCard(channel, {
+          title: channel.name,
+          subtitle: option ? option.format.toUpperCase() : "web"
+        }));
       });
+    }
+
+    function renderRecommended() {
+      els.recommended.innerHTML = "";
+
+      recommendedRequests.forEach((request) => {
+        const channel = findRecommendedChannel(request);
+        if (channel) {
+          const option = getPlayableOption(channel);
+          els.recommended.appendChild(createChannelCard(channel, {
+            title: request.title,
+            subtitle: option ? option.format.toUpperCase() : "web"
+          }));
+          return;
+        }
+
+        const button = document.createElement("button");
+        button.className = "channel-card missing";
+        button.type = "button";
+        button.disabled = true;
+        button.innerHTML = `
+          <span class="tv-icon"></span>
+          <span class="card-name">${request.title}<span class="badge">${request.note}</span></span>
+        `;
+        els.recommended.appendChild(button);
+      });
+    }
+
+    function createChannelCard(channel, label) {
+      const option = getPlayableOption(channel);
+      const button = document.createElement("button");
+      button.className = "channel-card";
+      button.type = "button";
+      button.disabled = !option && !channel.web;
+      button.innerHTML = `
+        <span class="tv-icon">
+          ${channel.logo ? `<img class="logo" alt="" src="${channel.logo}">` : ""}
+        </span>
+        <span class="card-name">${label.title}<span class="badge">${label.subtitle}</span></span>
+      `;
+      button.addEventListener("click", () => selectChannel(channel));
+      return button;
     }
 
     function updateStatus() {
@@ -549,6 +664,7 @@
         if (!state.groups.length) throw new Error("Lista sin grupos");
         updateStatus();
         renderGroups();
+        renderRecommended();
         renderChannels();
       } catch (error) {
         els.status.textContent = "No se pudo cargar la lista. Abre la app con abrir-tv.bat y revisa tu conexion.";
